@@ -34,6 +34,9 @@ class OneLapClient:
 
     def list_fit_activities(self, since: date, limit: int):
         response = self.session.get(f"{self.base_url}/api/activities", timeout=30)
+        if response.status_code == 401:
+            self.login()
+            response = self.session.get(f"{self.base_url}/api/activities", timeout=30)
         response.raise_for_status()
         payload = response.json()
         items = payload.get("data", [])
