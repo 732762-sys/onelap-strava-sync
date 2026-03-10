@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
+import requests
+
 
 @dataclass
 class OneLapActivity:
@@ -10,25 +12,26 @@ class OneLapActivity:
 
 
 class OneLapClient:
-    def __init__(self, backend):
-        self.backend = backend
+    def __init__(self, base_url: str, username: str, password: str):
+        self.base_url = base_url.rstrip("/")
+        self.username = username
+        self.password = password
+        self.session = requests.Session()
 
     def login(self):
-        return self.backend.login()
+        response = self.session.post(
+            f"{self.base_url}/login",
+            data={"username": self.username, "password": self.password},
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        if payload.get("code") != 0:
+            raise RuntimeError("OneLap login failed")
+        return True
 
     def list_fit_activities(self, since: date, limit: int):
-        items = self.backend.list_fit_activities(limit=limit)
-        cutoff = since.isoformat()
-        filtered = []
-        for item in items:
-            if item["start_time"][:10] >= cutoff:
-                filtered.append(
-                    OneLapActivity(
-                        activity_id=str(item["activity_id"]),
-                        start_time=str(item["start_time"]),
-                    )
-                )
-        return filtered
+        raise NotImplementedError
 
     def download_fit(self, activity_id: str, output_dir: Path):
-        return self.backend.download_fit(activity_id=activity_id, output_dir=output_dir)
+        raise NotImplementedError
