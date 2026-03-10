@@ -2,12 +2,25 @@
 
 Local one-command Python tool to export FIT files from OneLap and incrementally upload to Strava.
 
+This project runs with direct OneLap HTTP + Strava HTTP adapters.
+
 ## Setup
 
 1. Create and activate virtual environment.
 2. Install dependencies:
    - `pip install -r requirements-dev.txt`
 3. Copy `.env.example` to `.env` and fill required values.
+
+Required `.env` keys for runtime:
+
+- `ONELAP_USERNAME`
+- `ONELAP_PASSWORD`
+- `STRAVA_CLIENT_ID`
+- `STRAVA_CLIENT_SECRET`
+- `STRAVA_REFRESH_TOKEN`
+- `STRAVA_ACCESS_TOKEN`
+- `STRAVA_EXPIRES_AT`
+- `DEFAULT_LOOKBACK_DAYS`
 
 ## OAuth First Run
 
@@ -17,6 +30,9 @@ Local one-command Python tool to export FIT files from OneLap and incrementally 
 
 ## One-command Run
 
+- OneLap HTTP prerequisites:
+  - OneLap account can sign in at `https://www.onelap.cn`
+  - Strava OAuth tokens are valid in `.env`
 - Default lookback run:
   - `python run_sync.py`
 - Run with explicit start date:
@@ -32,3 +48,5 @@ Local one-command Python tool to export FIT files from OneLap and incrementally 
 - If import errors happen, confirm dependencies are installed in the active virtual environment.
 - If Strava upload fails with 5xx, rerun; retriable errors use bounded backoff.
 - If OneLap risk control triggers, wait and rerun later.
+- If OneLap HTTP returns 401, verify username/password in `.env`.
+- If OneLap HTTP returns 4xx/5xx repeatedly, verify endpoint reachability and retry later.

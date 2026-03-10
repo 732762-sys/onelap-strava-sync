@@ -1,9 +1,12 @@
 # OneLap Adapter Notes
 
-`OneLapClient` wraps backend methods from the existing OneLap integration class (`SyncOnelapToXoss`-style API):
+`OneLapClient` now uses direct OneLap HTTP APIs (no placeholder backend):
 
-- `login()` -> delegates to backend `login()`
-- `list_fit_activities(since, limit)` -> delegates to backend `list_fit_activities(limit=...)` and applies since-date filter in adapter
-- `download_fit(activity_id, output_dir)` -> delegates to backend `download_fit(...)`
+- `login()` -> POST `https://www.onelap.cn/login` and stores session cookie
+- `list_fit_activities(since, limit)` -> GET `https://www.onelap.cn/api/activities`, normalizes to `OneLapActivity`, applies since-date filter, caches `fit_url`
+- `download_fit(activity_id, output_dir)` -> downloads cached `fit_url` to `<output_dir>/<activity_id>.fit`
 
-The adapter keeps orchestration logic out of backend code so sync engine can stay framework-agnostic.
+Runtime behavior notes:
+
+- On first list request, 401 triggers one login attempt and retry.
+- `SyncEngine` remains responsible for dedupe/state transitions and Strava upload flow.

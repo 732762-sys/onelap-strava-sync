@@ -33,3 +33,8 @@ def test_user_docs_and_env_example_exist():
     assert "STRAVA_CLIENT_ID=" in env_text
     assert "STRAVA_CLIENT_SECRET=" in env_text
     assert "STRAVA_REFRESH_TOKEN=" in env_text
+
+
+def test_readme_documents_real_onelap_http_usage():
+    text = Path("README.md").read_text(encoding="utf-8")
+    assert "OneLap HTTP" in text
