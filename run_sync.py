@@ -9,29 +9,32 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from sync_onelap_strava.dedupe_service import make_fingerprint
+from sync_onelap_strava.config import load_settings
 from sync_onelap_strava.logging_setup import configure_logging
+from sync_onelap_strava.onelap_client import OneLapClient
 from sync_onelap_strava.state_store import JsonStateStore
+from sync_onelap_strava.strava_client import StravaClient
 from sync_onelap_strava.sync_engine import SyncEngine
 
 
 def build_default_engine():
-    class _NotConfiguredOnelap:
-        def list_fit_activities(self, since, limit):
-            return []
-
-        def download_fit(self, activity_id, output_dir):
-            raise RuntimeError("OneLap backend not configured")
-
-    class _NotConfiguredStrava:
-        def upload_fit(self, path):
-            raise RuntimeError("Strava client not configured")
-
-        def poll_upload(self, upload_id):
-            raise RuntimeError("Strava client not configured")
+    settings = load_settings(cli_since=None)
+    onelap = OneLapClient(
+        base_url="https://www.onelap.cn",
+        username=settings.onelap_username or "",
+        password=settings.onelap_password or "",
+    )
+    strava = StravaClient(
+        client_id=settings.strava_client_id or "",
+        client_secret=settings.strava_client_secret or "",
+        refresh_token=settings.strava_refresh_token or "",
+        access_token=settings.strava_access_token or "",
+        expires_at=settings.strava_expires_at,
+    )
 
     return SyncEngine(
-        onelap_client=_NotConfiguredOnelap(),
-        strava_client=_NotConfiguredStrava(),
+        onelap_client=onelap,
+        strava_client=strava,
         state_store=JsonStateStore("state.json"),
         make_fingerprint=make_fingerprint,
         download_dir="downloads",
