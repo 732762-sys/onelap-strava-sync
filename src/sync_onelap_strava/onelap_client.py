@@ -62,4 +62,23 @@ class OneLapClient:
         return result
 
     def download_fit(self, activity_id: str, output_dir: Path):
-        raise NotImplementedError
+        fit_url = self._activity_fit_urls.get(activity_id)
+        if not fit_url:
+            raise RuntimeError(f"missing fit_url for activity {activity_id}")
+
+        if fit_url.startswith("http://") or fit_url.startswith("https://"):
+            download_url = fit_url
+        else:
+            download_url = f"{self.base_url}/{fit_url.lstrip('/')}"
+
+        response = self.session.get(download_url, stream=True, timeout=30)
+        response.raise_for_status()
+
+        output_path = Path(output_dir) / f"{activity_id}.fit"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open("wb") as handle:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    handle.write(chunk)
+
+        return output_path
