@@ -71,3 +71,45 @@ def test_download_only_prints_one_line_per_fit_with_time_and_filename(
     assert "2026-03-08T08:00:00Z  a1.fit" in out
     assert "2026-03-09T08:00:00Z  a2.fit" in out
     assert "download-only fetched 2 -> downloaded 2 -> failed 0" in out
+
+
+def test_download_only_prints_failed_line_for_item_errors(monkeypatch, capsys):
+    monkeypatch.setenv("ONELAP_USERNAME", "u")
+    monkeypatch.setenv("ONELAP_PASSWORD", "p")
+
+    class Item:
+        def __init__(self, activity_id, start_time):
+            self.activity_id = activity_id
+            self.start_time = start_time
+
+    class FakeOneLapClient:
+        def list_fit_activities(self, since, limit):
+            return [Item("a1", "2026-03-08T08:00:00Z")]
+
+        def download_fit(self, activity_id, output_dir):
+            raise RuntimeError("disk full")
+
+    import run_sync
+
+    monkeypatch.setattr(
+        run_sync,
+        "OneLapClient",
+        lambda base_url, username, password: FakeOneLapClient(),
+    )
+
+    code = run_sync.run_cli(["--download-only", "--since", "2026-03-01"])
+    out = capsys.readouterr().out
+
+    assert code == 0
+    assert "2026-03-08T08:00:00Z  a1.fit  FAILED: disk full" in out
+    assert "download-only fetched 1 -> downloaded 0 -> failed 1" in out
+
+
+def test_download_only_returns_nonzero_when_onelap_settings_missing(monkeypatch):
+    monkeypatch.delenv("ONELAP_USERNAME", raising=False)
+    monkeypatch.delenv("ONELAP_PASSWORD", raising=False)
+
+    from run_sync import run_cli
+
+    code = run_cli(["--download-only"])
+    assert code != 0
