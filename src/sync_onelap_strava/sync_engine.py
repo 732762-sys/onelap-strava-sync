@@ -1,6 +1,10 @@
+import logging
 from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
+
+
+LOGGER = logging.getLogger("sync_onelap_strava")
 
 
 class OnelapRiskControlError(Exception):
@@ -70,11 +74,23 @@ class SyncEngine:
                 result = self.strava_client.poll_upload(upload_id)
                 activity_id = result.get("activity_id")
                 if activity_id is None or result.get("error") is not None:
+                    LOGGER.error(
+                        "strava upload failed activity_id=%s upload_id=%s status=%s error=%s",
+                        item.activity_id,
+                        upload_id,
+                        result.get("status"),
+                        result.get("error"),
+                    )
                     failed += 1
                     continue
                 self.state_store.mark_synced(fingerprint, int(activity_id))
                 success += 1
-            except Exception:
+            except Exception as exc:
+                LOGGER.error(
+                    "strava upload exception activity_id=%s error=%s",
+                    item.activity_id,
+                    exc,
+                )
                 failed += 1
 
         return SyncSummary(

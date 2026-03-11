@@ -56,6 +56,7 @@ Required `.env` keys for runtime:
 
 - If import errors happen, confirm dependencies are installed in the active virtual environment.
 - If Strava upload fails with 5xx, rerun; retriable errors use bounded backoff.
+- If sync reports failed uploads, check `logs/sync.log`; each failure line includes Strava `status` and `error` details.
 - If OneLap risk control triggers, wait and rerun later.
 - If OneLap HTTP returns 401, verify username/password in `.env`.
 - If OneLap HTTP returns 4xx/5xx repeatedly, verify endpoint reachability and retry later.

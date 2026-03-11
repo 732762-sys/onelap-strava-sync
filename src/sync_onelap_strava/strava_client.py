@@ -77,6 +77,15 @@ class StravaClient:
             if response.status_code >= 500:
                 raise StravaRetriableError(f"strava upload 5xx: {response.status_code}")
             if response.status_code >= 400:
+                detail = ""
+                try:
+                    detail = str(response.json())
+                except ValueError:
+                    detail = response.text.strip()
+                if detail:
+                    raise StravaPermanentError(
+                        f"strava upload failed: {response.status_code} detail={detail}"
+                    )
                 raise StravaPermanentError(
                     f"strava upload failed: {response.status_code}"
                 )
