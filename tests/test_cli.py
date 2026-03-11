@@ -53,3 +53,23 @@ def test_cli_accepts_download_only_argument_and_runs_engine(capsys):
 
     exit_code = run_cli(["--download-only"], engine=FakeEngine())
     assert exit_code == 0
+
+
+def test_cli_runs_strava_auth_init_and_exits_zero(monkeypatch):
+    monkeypatch.setenv("STRAVA_CLIENT_ID", "210500")
+    monkeypatch.setenv("STRAVA_CLIENT_SECRET", "secret")
+
+    called = {"ok": False}
+
+    def fake_run_strava_auth_init(client_id, client_secret, env_file):
+        assert client_id == "210500"
+        assert client_secret == "secret"
+        called["ok"] = True
+
+    import run_sync
+
+    monkeypatch.setattr(run_sync, "run_strava_auth_init", fake_run_strava_auth_init)
+
+    code = run_sync.run_cli(["--strava-auth-init"])
+    assert code == 0
+    assert called["ok"]

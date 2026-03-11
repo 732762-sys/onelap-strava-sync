@@ -3,6 +3,8 @@ from pathlib import Path
 
 import requests
 
+from sync_onelap_strava.env_store import upsert_env_values
+
 
 class StravaRetriableError(Exception):
     pass
@@ -47,6 +49,17 @@ class StravaClient:
         self.access_token = payload["access_token"]
         self.refresh_token = payload.get("refresh_token", self.refresh_token)
         self.expires_at = payload.get("expires_at", self.expires_at)
+        try:
+            upsert_env_values(
+                Path(".env"),
+                {
+                    "STRAVA_ACCESS_TOKEN": self.access_token,
+                    "STRAVA_REFRESH_TOKEN": self.refresh_token,
+                    "STRAVA_EXPIRES_AT": str(self.expires_at),
+                },
+            )
+        except Exception:
+            pass
         return self.access_token
 
     def _auth_headers(self) -> dict[str, str]:

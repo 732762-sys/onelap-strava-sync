@@ -28,6 +28,10 @@ Required `.env` keys for runtime:
 2. Complete an OAuth authorization flow to obtain `refresh_token`.
 3. Save credentials in `.env`.
 
+- One-time Strava auth init: `python run_sync.py --strava-auth-init`
+- This flow requests `read,activity:write` and writes tokens to `.env`.
+- During normal runs, refreshed Strava tokens are automatically persisted back to `.env`.
+
 ## One-command Run
 
 - OneLap HTTP prerequisites:
