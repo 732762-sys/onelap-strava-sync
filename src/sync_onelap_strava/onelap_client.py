@@ -2,6 +2,9 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime
 import hashlib
 from pathlib import Path
+import re
+from urllib.parse import urlparse
+from uuid import uuid4
 
 import requests
 
@@ -11,6 +14,8 @@ class OneLapActivity:
     activity_id: str
     start_time: str
     fit_url: str
+    record_key: str
+    source_filename: str
 
 
 class OneLapClient:
@@ -19,7 +24,7 @@ class OneLapClient:
         self.username = username
         self.password = password
         self.session = requests.Session()
-        self._activity_fit_urls: dict[str, str] = {}
+        self._activity_fit_urls: dict[str, tuple[str, str]] = {}
 
     def login(self):
         request_data = {
@@ -49,19 +54,24 @@ class OneLapClient:
             activity_id = str(raw.get("id") or raw.get("activity_id") or "")
             start_time = self._parse_start_time(raw)
             fit_url = str(
-                raw.get("fit_url") or raw.get("durl") or raw.get("fitUrl") or ""
-            )
+                raw.get("fit_url") or raw.get("fitUrl") or raw.get("durl") or ""
+            ).strip()
+            record_key, source_filename = self._build_record_identity(raw)
             if not activity_id or not start_time or not fit_url:
                 continue
             if start_time[:10] < cutoff:
+                continue
+            if not record_key:
                 continue
 
             normalized = OneLapActivity(
                 activity_id=activity_id,
                 start_time=start_time,
                 fit_url=fit_url,
+                record_key=record_key,
+                source_filename=source_filename,
             )
-            self._activity_fit_urls[activity_id] = fit_url
+            self._activity_fit_urls[record_key] = (fit_url, source_filename)
             result.append(normalized)
             if len(result) >= limit:
                 break
@@ -122,10 +132,70 @@ class OneLapClient:
             return created_at
         return ""
 
-    def download_fit(self, activity_id: str, output_dir: Path):
-        fit_url = self._activity_fit_urls.get(activity_id)
-        if not fit_url:
-            raise RuntimeError(f"missing fit_url for activity {activity_id}")
+    def _build_record_identity(self, raw: dict) -> tuple[str, str]:
+        file_key = str(raw.get("fileKey") or "").strip()
+        if file_key:
+            return f"fileKey:{file_key}", file_key
+
+        fit_url = str(raw.get("fit_url") or raw.get("fitUrl") or "").strip()
+        if fit_url:
+            return f"fitUrl:{fit_url}", fit_url
+
+        durl = str(raw.get("durl") or "").strip()
+        if durl:
+            return f"durl:{durl}", durl
+
+        return "", ""
+
+    def _normalize_fit_filename(self, value: str) -> str:
+        text = str(value or "").strip()
+        if not text:
+            text = "activity.fit"
+
+        parsed = urlparse(text)
+        path_source = parsed.path if parsed.path else text
+        filename = Path(path_source.replace("\\", "/")).name
+        filename = re.sub(r'[<>:"/\\|?*]+', "_", filename).strip().strip(". ")
+        if not filename:
+            filename = "activity"
+        if not filename.lower().endswith(".fit"):
+            filename = f"{filename}.fit"
+        return filename
+
+    def _hash_file(self, path: Path) -> str:
+        digest = hashlib.sha256()
+        with Path(path).open("rb") as handle:
+            for chunk in iter(lambda: handle.read(8192), b""):
+                if chunk:
+                    digest.update(chunk)
+        return digest.hexdigest()
+
+    def _select_output_path(self, target: Path, downloaded_path: Path) -> Path:
+        if not target.exists():
+            return target
+
+        downloaded_hash = self._hash_file(downloaded_path)
+        if self._hash_file(target) == downloaded_hash:
+            downloaded_path.unlink(missing_ok=True)
+            return target
+
+        stem = target.stem
+        suffix = target.suffix
+        index = 2
+        while True:
+            candidate = target.with_name(f"{stem}-{index}{suffix}")
+            if not candidate.exists():
+                return candidate
+            if self._hash_file(candidate) == downloaded_hash:
+                downloaded_path.unlink(missing_ok=True)
+                return candidate
+            index += 1
+
+    def download_fit(self, record_key: str, output_dir: Path):
+        fit_meta = self._activity_fit_urls.get(record_key)
+        if fit_meta is None:
+            raise RuntimeError(f"missing fit_url for record {record_key}")
+        fit_url, source_filename = fit_meta
 
         if fit_url.startswith("http://") or fit_url.startswith("https://"):
             download_url = fit_url
@@ -135,11 +205,17 @@ class OneLapClient:
         response = self.session.get(download_url, stream=True, timeout=30)
         response.raise_for_status()
 
-        output_path = Path(output_dir) / f"{activity_id}.fit"
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with output_path.open("wb") as handle:
+        safe_name = self._normalize_fit_filename(source_filename)
+        target_path = Path(output_dir) / safe_name
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        temp_path = target_path.with_name(f".{target_path.name}.{uuid4().hex}.tmp")
+        with temp_path.open("wb") as handle:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     handle.write(chunk)
 
+        output_path = self._select_output_path(target_path, temp_path)
+        if temp_path.exists():
+            temp_path.replace(output_path)
         return output_path
