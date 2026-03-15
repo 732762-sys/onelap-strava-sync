@@ -13,6 +13,7 @@
 ## Runtime Modules
 
 - `src/sync_onelap_strava/config.py`
+- `src/sync_onelap_strava/onelap_auth_init.py`
 - `src/sync_onelap_strava/onelap_client.py`
 - `src/sync_onelap_strava/strava_client.py`
 - `src/sync_onelap_strava/sync_engine.py`

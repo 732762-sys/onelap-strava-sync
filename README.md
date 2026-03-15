@@ -22,13 +22,19 @@ Required `.env` keys for runtime:
 - `STRAVA_EXPIRES_AT`
 - `DEFAULT_LOOKBACK_DAYS`
 
+## OneLap Account Setup
+
+- One-time OneLap credential init: `onelap-sync --onelap-auth-init`
+- Interactively prompts for username and password (password input is hidden).
+- Saves `ONELAP_USERNAME` and `ONELAP_PASSWORD` to `.env`.
+
 ## OAuth First Run
 
 1. Create Strava API app and get `client_id` + `client_secret`.
 2. Complete an OAuth authorization flow to obtain `refresh_token`.
 3. Save credentials in `.env`.
 
-- One-time Strava auth init: `python run_sync.py --strava-auth-init`
+- One-time Strava auth init: `onelap-sync --strava-auth-init`
 - This flow requests `read,activity:write` and writes tokens to `.env`.
 - During normal runs, refreshed Strava tokens are automatically persisted back to `.env`.
 

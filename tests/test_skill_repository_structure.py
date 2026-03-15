@@ -27,6 +27,7 @@ def test_skill_commands_cover_primary_cli_modes():
     assert "onelap-sync" in text
     assert "--since" in text
     assert "--download-only" in text
+    assert "--onelap-auth-init" in text
     assert "--strava-auth-init" in text
 
 

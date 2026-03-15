@@ -10,11 +10,13 @@ import sync_onelap_strava.cli as _cli
 
 OneLapClient = _cli.OneLapClient
 run_strava_auth_init = _cli.run_strava_auth_init
+run_onelap_auth_init = _cli.run_onelap_auth_init
 
 
 def _sync_runtime_overrides():
     _cli.OneLapClient = OneLapClient
     _cli.run_strava_auth_init = run_strava_auth_init
+    _cli.run_onelap_auth_init = run_onelap_auth_init
 
 
 def build_default_engine():

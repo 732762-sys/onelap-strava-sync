@@ -6,6 +6,7 @@ from sync_onelap_strava.config import load_settings
 from sync_onelap_strava.dedupe_service import make_fingerprint
 from sync_onelap_strava.env_store import upsert_env_values
 from sync_onelap_strava.logging_setup import configure_logging
+from sync_onelap_strava.onelap_auth_init import run_onelap_auth_init
 from sync_onelap_strava.onelap_client import OneLapClient
 from sync_onelap_strava.state_store import JsonStateStore
 from sync_onelap_strava.strava_client import StravaClient
@@ -142,10 +143,19 @@ def run_cli(argv=None, engine=None, log_file: Path | str = "logs/sync.log"):
         action="store_true",
         help="Run one-time Strava OAuth initialization and save tokens to .env",
     )
+    parser.add_argument(
+        "--onelap-auth-init",
+        action="store_true",
+        help="Interactively set OneLap username and password, saving to .env",
+    )
     args = parser.parse_args(argv)
 
     logger = configure_logging(log_file)
     try:
+        if args.onelap_auth_init:
+            run_onelap_auth_init(Path(".env"))
+            return 0
+
         if args.strava_auth_init:
             settings = load_settings(cli_since=None)
             run_strava_auth_init(

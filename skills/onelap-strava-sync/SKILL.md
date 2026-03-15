@@ -10,6 +10,7 @@ Use this skill to run OneLap to Strava sync workflows through the existing root 
 
 - User asks to sync OneLap FIT files to Strava.
 - User asks to download OneLap FIT files without upload.
+- User asks to initialize or configure OneLap account credentials.
 - User asks to initialize Strava OAuth tokens.
 
 ## Usage
