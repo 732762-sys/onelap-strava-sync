@@ -1,0 +1,30 @@
+name: Onelap to Strava Auto Sync
+
+on:
+  schedule:
+    # 每天 UTC 时间 2 点和 10 点（大概是北京时间上午 10 点和下午 6 点）各自动跑一次
+    - cron: '0 2,10 * * *' 
+  workflow_dispatch: # 这个选项允许你在网页上手动点击运行测试
+
+jobs:
+  run-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 准备 Python 环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: 安装你找到的同步工具
+        run: pip install onelap-strava-sync
+        
+      - name: 从保险箱读取账号密码
+        run: |
+          echo "ONELAP_USERNAME=${{ secrets.ONELAP_USERNAME }}" >> .env
+          echo "ONELAP_PASSWORD=${{ secrets.ONELAP_PASSWORD }}" >> .env
+          echo "STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }}" >> .env
+          echo "STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }}" >> .env
+          echo "STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}" >> .env
+          
+      - name: 执行同步！
+        run: onelap-sync
