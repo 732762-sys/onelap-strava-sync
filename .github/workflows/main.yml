@@ -9,15 +9,18 @@ jobs:
   run-sync:
     runs-on: ubuntu-latest
     steps:
+      - name: 直接打包下载原作者的全部源码
+        uses: actions/checkout@v4
+        with:
+          repository: 'yintianan/onelap-strava-sync'
+
       - name: 准备 Python 环境
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
           
-      - name: 安装依赖插件和同步工具
-        run: |
-          pip install python-dotenv  # <--- 就是加了这一句，手动补齐缺失的零件
-          pip install git+https://github.com/yintianan/onelap-strava-sync.git
+      - name: 照着作者的完整清单，一次性安装所有零件！
+        run: pip install -r requirements-dev.txt
         
       - name: 从保险箱读取账号密码
         run: |
@@ -27,5 +30,5 @@ jobs:
           echo "STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }}" >> .env
           echo "STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}" >> .env
           
-      - name: 执行同步！
-        run: onelap-sync
+      - name: 启动本地保底程序，执行同步！
+        run: python run_sync.py
