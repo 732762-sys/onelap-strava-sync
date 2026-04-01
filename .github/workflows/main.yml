@@ -14,8 +14,10 @@ jobs:
         with:
           python-version: '3.11'
           
-      - name: 直接从原作者的 GitHub 安装工具
-        run: pip install git+https://github.com/yintianan/onelap-strava-sync.git
+      - name: 安装依赖插件和同步工具
+        run: |
+          pip install python-dotenv  # <--- 就是加了这一句，手动补齐缺失的零件
+          pip install git+https://github.com/yintianan/onelap-strava-sync.git
         
       - name: 从保险箱读取账号密码
         run: |
