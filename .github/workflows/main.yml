@@ -2,7 +2,7 @@ name: Onelap to Strava Auto Sync
 
 on:
   schedule:
-    - cron: '0 2,10 * * *' 
+    - cron: '0 0-14 * * *' 
   workflow_dispatch:
 
 jobs:
